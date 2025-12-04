@@ -3,7 +3,7 @@ A web app for displaying on the Media Lab screens
 
 ## Photo Slideshow
 
-The `slideshow.html` file provides an automatic photo slideshow that displays all photos in the current directory.
+The `index.html` file provides an automatic photo slideshow that displays all photos in the current directory.
 
 ### Usage
 
