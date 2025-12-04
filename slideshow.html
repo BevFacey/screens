@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Slideshow</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .slideshow-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        .slide img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .message {
+            color: #fff;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            text-align: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slideshow-container" id="slideshow">
+        <div class="message" id="loading">Loading photos...</div>
+    </div>
+
+    <script>
+        (function() {
+            const SLIDE_DURATION = 5000; // 5 seconds per slide
+            const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg'];
+
+            let currentSlide = 0;
+            let photos = [];
+            let slideshowInterval = null;
+
+            async function loadPhotos() {
+                try {
+                    const response = await fetch('photos.json');
+                    if (!response.ok) {
+                        throw new Error('photos.json not found');
+                    }
+                    const data = await response.json();
+                    photos = Array.isArray(data) ? data : data.photos || [];
+                } catch (error) {
+                    console.log('No photos.json found, looking for common image files...');
+                    photos = await discoverImages();
+                }
+
+                if (photos.length === 0) {
+                    showMessage('No photos found. Please add a photos.json file or place images in this directory.');
+                    return;
+                }
+
+                initSlideshow();
+            }
+
+            async function discoverImages() {
+                const commonNames = [
+                    'photo', 'image', 'img', 'picture', 'pic', 'slide',
+                    '1', '2', '3', '4', '5', '6', '7', '8', '9', '10'
+                ];
+
+                const filesToCheck = [];
+                for (const name of commonNames) {
+                    for (const ext of IMAGE_EXTENSIONS) {
+                        filesToCheck.push(name + ext);
+                    }
+                }
+
+                const results = await Promise.allSettled(
+                    filesToCheck.map(async (filename) => {
+                        const response = await fetch(filename, { method: 'HEAD' });
+                        if (response.ok) {
+                            return filename;
+                        }
+                        throw new Error('Not found');
+                    })
+                );
+
+                return results
+                    .filter(result => result.status === 'fulfilled')
+                    .map(result => result.value);
+            }
+
+            function showMessage(text) {
+                const container = document.getElementById('slideshow');
+                container.innerHTML = '';
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message';
+                messageDiv.textContent = text;
+                container.appendChild(messageDiv);
+            }
+
+            function initSlideshow() {
+                const container = document.getElementById('slideshow');
+                container.innerHTML = '';
+
+                photos.forEach((photo, index) => {
+                    const slide = document.createElement('div');
+                    slide.className = 'slide' + (index === 0 ? ' active' : '');
+
+                    const img = document.createElement('img');
+                    img.src = photo;
+                    img.alt = 'Slide ' + (index + 1);
+                    img.onerror = function() {
+                        this.parentElement.style.display = 'none';
+                    };
+
+                    slide.appendChild(img);
+                    container.appendChild(slide);
+                });
+
+                if (photos.length > 1) {
+                    startSlideshow();
+                }
+            }
+
+            function startSlideshow() {
+                slideshowInterval = setInterval(nextSlide, SLIDE_DURATION);
+            }
+
+            function nextSlide() {
+                const slides = document.querySelectorAll('.slide');
+                if (slides.length === 0) return;
+
+                // Ensure currentSlide is within bounds
+                if (currentSlide >= slides.length) {
+                    currentSlide = 0;
+                }
+
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }
+
+            // Start loading when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', loadPhotos);
+            } else {
+                loadPhotos();
+            }
+        })();
+    </script>
+</body>
+</html>
