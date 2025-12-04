@@ -177,6 +177,14 @@
             } else {
                 loadPhotos();
             }
+
+            // full screen once loaded
+            document.addEventListener("DOMContentLoaded", () => {
+                const el = document.documentElement;
+                if (el.requestFullscreen) {
+                    el.requestFullscreen();
+                }
+            });
         })();
     </script>
 </body>
