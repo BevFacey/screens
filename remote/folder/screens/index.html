@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Screen Client</title>
+<meta http-equiv="Content-Security-Policy" content="
+    default-src * 'unsafe-inline' 'unsafe-eval';
+    script-src * 'unsafe-inline' 'unsafe-eval';
+    connect-src *;
+    img-src * data:;
+    style-src * 'unsafe-inline';
+    frame-src *;
+">
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    overflow: hidden;
+    height: 100%;
+}
+
+#idTag {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    padding: 3px 6px;
+    font-size: 14px;
+    border-radius: 6px;
+    z-index: 1000;
+    cursor: pointer;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#idTag.hidden {
+    opacity: 0.2;
+    color: transparent;
+    width: 10px;
+    height: 10px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    overflow: hidden;
+}
+
+#iframe {
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    background: black;
+}
+</style>
+</head>
+<body>
+
+<div id="idTag">Loading...</div>
+<iframe id="iframe"></iframe>
+
+<script>
+const idTag = document.getElementById("idTag");
+
+// --- Generate or load client ID ---
+let clientID = localStorage.getItem("clientID");
+if (!clientID) {
+    clientID = "client-" + Math.floor(Math.random() * 999999);
+    localStorage.setItem("clientID", clientID);
+}
+idTag.innerText = clientID;
+
+// --- Toggle hide on click ---
+idTag.addEventListener("click", () => idTag.classList.toggle("hidden"));
+
+// --- Register with server ---
+async function register() {
+    try {
+        const res = await fetch("/clients.json?" + Date.now());
+        let data = await res.json();
+
+        if (!data || typeof data !== "object") data = {};
+
+        data[clientID] = { lastSeen: Date.now() };
+
+        const writeRes = await fetch("/write.php?file=clients.json", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        });
+
+        const result = await writeRes.json();
+        if (result.success) {
+            idTag.innerText = clientID + " ✅";
+        } else {
+            idTag.innerText = clientID + " ❌";
+            console.error("Write failed:", result);
+        }
+
+    } catch (err) {
+        console.error("Registration failed:", err);
+        idTag.innerText = clientID + " ❌";
+    }
+}
+
+// Initial registration and repeat
+register();
+setInterval(register, 5000);
+
+// --- Normalize YouTube / URLs ---
+function normalizeURL(raw) {
+    let url = raw.trim();
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        url = "https://" + url;
+    }
+
+    // YouTube watch
+    let match = url.match(/youtube\.com\/watch\?v=([^&]+)/);
+    if (match) return `https://www.youtube.com/embed/${match[1]}?autoplay=1&mute=1`;
+
+    // YouTube shorts
+    match = url.match(/youtube\.com\/shorts\/([^?&]+)/);
+    if (match) return `https://www.youtube.com/embed/${match[1]}?autoplay=1&mute=1`;
+
+    // youtu.be short link
+    match = url.match(/youtu\.be\/([^?&]+)/);
+    if (match) return `https://www.youtube.com/embed/${match[1]}?autoplay=1&mute=1`;
+
+    // Already an embed link
+    if (url.includes("youtube.com/embed/")) {
+        if (!url.includes("autoplay=")) {
+            url += (url.includes("?") ? "&" : "?") + "autoplay=1&mute=1";
+        }
+        return url;
+    }
+
+    return url;
+}
+
+// --- Listen for commands ---
+let currentURL = "";
+
+async function fetchCommands() {
+    try {
+        const res = await fetch("/commands.json?" + Date.now());
+        const cmd = await res.json();
+
+        if (!cmd) return;
+
+        // Disconnect command
+        if (cmd[clientID] === "https://google.com") {
+            // Clear this command to avoid looping
+            await fetch("/write.php?file=commands.json", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ...cmd, [clientID]: "" })
+            });
+            window.location.replace("https://google.com");
+            return;
+        }
+
+        // Update iframe if new URL
+        if (cmd[clientID] && cmd[clientID] !== currentURL) {
+            currentURL = normalizeURL(cmd[clientID]);
+            document.getElementById("iframe").src = currentURL;
+        }
+
+    } catch (err) {
+        console.error("Failed to fetch commands:", err);
+    }
+}
+
+setInterval(fetchCommands, 1500);
+
+</script>
+
+</body>
+</html>
