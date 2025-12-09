@@ -85,7 +85,7 @@ function normalizeURL(raw) {
 
 
 function loadClients() {
-    fetch("clients.json?" + Date.now())
+    fetch("https://bev.facey.rocks/screens/remote/clients.json?" + Date.now())
     .then(r => r.json())
     .then(list => {
         let html = "";
@@ -111,13 +111,13 @@ function toggle(id) {
 }
 
 function updateCommands(callback) {
-    fetch("commands.json")
+    fetch("https://bev.facey.rocks/screens/remote/commands.json")
         .then(r => r.json())
         .then(callback);
 }
 
 function writeCommands(cmd) {
-    return fetch("write.php?file=commands.json", {
+    return fetch("https://bev.facey.rocks/screens/remote/write.php?file=commands.json", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
         body: JSON.stringify(cmd)
@@ -136,7 +136,7 @@ function sendToSelected() {
 function sendToAll() {
     let url = normalizeURL(document.getElementById("urlInput").value);
     recentUrls.push(url);
-    fetch("clients.json")
+    fetch("https://bev.facey.rocks/screens/remote/clients.json")
         .then(r => r.json())
         .then(clients => {
             updateCommands(cmd => {
@@ -147,7 +147,7 @@ function sendToAll() {
 }
 
 function disconnect(id) {
-    fetch("clients.json")
+    fetch("https://bev.facey.rocks/screens/remote/clients.json")
         .then(r => r.json())
         .then(list => {
             updateCommands(cmd => {
@@ -155,7 +155,7 @@ function disconnect(id) {
                 writeCommands(cmd);
             });
             delete list[id];
-            return fetch("write.php?file=clients.json", {
+            return fetch("https://bev.facey.rocks/screens/remote/write.php?file=clients.json", {
                 method: "POST",
                 headers: {"Content-Type":"application/json"},
                 body: JSON.stringify(list)
