@@ -75,14 +75,14 @@ idTag.addEventListener("click", () => idTag.classList.toggle("hidden"));
 // --- Register with server ---
 async function register() {
     try {
-        const res = await fetch("/clients.json?" + Date.now());
+        const res = await fetch("https://bev.facey.rocks/screens/remote/clients.json?" + Date.now());
         let data = await res.json();
 
         if (!data || typeof data !== "object") data = {};
 
         data[clientID] = { lastSeen: Date.now() };
 
-        const writeRes = await fetch("/write.php?file=clients.json", {
+        const writeRes = await fetch("https://bev.facey.rocks/screens/remote/write.php?file=clients.json", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
@@ -141,7 +141,7 @@ let currentURL = "";
 
 async function fetchCommands() {
     try {
-        const res = await fetch("/commands.json?" + Date.now());
+        const res = await fetch("https://bev.facey.rocks/screens/remote/commands.json?" + Date.now());
         const cmd = await res.json();
 
         if (!cmd) return;
@@ -149,7 +149,7 @@ async function fetchCommands() {
         // Disconnect command
         if (cmd[clientID] === "https://google.com") {
             // Clear this command to avoid looping
-            await fetch("/write.php?file=commands.json", {
+            await fetch("https://bev.facey.rocks/screens/remote/write.php?file=commands.json", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...cmd, [clientID]: "" })
