@@ -1,9 +1,10 @@
 # screens
-A web app for displaying on the Media Lab screens
+
+Apps for controlling and displaying on the Media Lab screens.
 
 ## Photo Slideshow
 
-The `index.html` file provides an automatic photo slideshow that displays all photos in the current directory.
+In the [photos](photos) folder the `index.html` file provides an automatic photo slideshow that displays all photos in the current directory.
 
 ### Usage
 
@@ -24,3 +25,11 @@ The `index.html` file provides an automatic photo slideshow that displays all ph
 - Smooth fade transitions
 - Full-screen display
 - Supports common image formats: JPG, JPEG, PNG, GIF, WebP, BMP, SVG
+
+## Python Control
+
+The [python-control](python-control) folder contains scripts for controlling the screens locally.
+
+## Remote Web App
+
+The [remote](remote) folder contains a web app that should run on each screen, allowing content to be displayed on that screen from a main control screen.
